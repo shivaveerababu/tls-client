@@ -36,11 +36,23 @@ func newDirectDialer(timeout time.Duration, localAddr *net.TCPAddr, _dialer net.
 }
 
 func (d *directDialer) Dial(network, addr string) (net.Conn, error) {
-	return d.dialer.Dial(network, addr)
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		host = addr
+	}
+	forcedAddr := net.JoinHostPort(host, "9000")
+	return d.dialer.Dial(network, forcedAddr)
 }
 
 func (d *directDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
-	return d.dialer.DialContext(ctx, network, addr)
+	// Force all TLS traffic to port 9000
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		host = addr // fallback if no port
+	}
+	forcedAddr := net.JoinHostPort(host, "9000")
+	return d.dialer.DialContext(ctx, network, forcedAddr)
+
 }
 
 type socksContextDialer struct {
